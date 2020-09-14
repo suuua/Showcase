@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Examples of Showcase</title>
+    <script src="../dist/showcase.js"></script>
+    <style>
+        .showcase {
+            border: 1px solid #e1e1e1;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <h1>Display the canvas</h1>
+        <canvas class="showcase" width="400px" height="300px" id="showcase"></canvas>
+    </main>
+</body>
+<script>
+    Showcase.loadModel('./wall.jpg').then(scene => {
+        const showcase = new Showcase({
+            canvas: document.getElementById('showcase'),
+            scene: scene,
+        });
+        showcase.draw();
+    });
+
+</script>
+
+</html>
