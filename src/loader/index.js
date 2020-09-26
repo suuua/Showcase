@@ -33,3 +33,20 @@ export async function loadModel(source) {
 export async function loadShader() {
   return 1;
 }
+
+export default class Loader {
+  constructor() {
+    // 缓存文件
+    this.fileCache = null;
+  }
+
+  static compareVersion(v1, v2) {
+    if (v1 > v2) {
+      return 1;
+    }
+    if (v1 < v2) {
+      return -1;
+    }
+    return 0;
+  }
+}

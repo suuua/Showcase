@@ -20,13 +20,22 @@
     </main>
 </body>
 <script>
-    Showcase.loadModel('./wall.jpg').then(scene => {
+    // Showcase.loadModel('./wall.jpg').then(scene => {
+    //     const showcase = new Showcase({
+    //         canvas: document.getElementById('showcase'),
+    //         scene: scene,
+    //     });
+    //     showcase.draw();
+    // });
+
+    Showcase.GLTFLoader.load('./xier.gltf').then(scene => {
+        console.log(scene);
         const showcase = new Showcase({
             canvas: document.getElementById('showcase'),
             scene: scene,
         });
         showcase.draw();
-    });
+    })
 
 </script>
 

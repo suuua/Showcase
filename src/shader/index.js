@@ -6,7 +6,7 @@ import { warn } from '../helper/log';
  * @param {String} fsSource fragment shader source string
  */
 export default class Shader {
-  constructor(gl, vsSource, fsSource) {
+  constructor({ gl, vsSource, fsSource }) {
     this.$gl = gl;
     const vertexShader = this.compileShader(gl.VERTEX_SHADER, vsSource);
     const fragmentShader = this.compileShader(gl.FRAGMENT_SHADER, fsSource);
@@ -45,5 +45,10 @@ export default class Shader {
 
   use() {
     return this.$gl.useProgram(this.$shaderProgram);
+  }
+
+  setMat4(name, martix) {
+    const gl = this.$gl;
+    gl.uniformMatrix4fv(gl.getUniformLocation(this.$shaderProgram, name), false, martix);
   }
 }
