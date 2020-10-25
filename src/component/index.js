@@ -1,7 +1,9 @@
 export default class Component {
-  // constructor() { }
-
-  // onBeforeRenderFrame() { }
-
-  // renderFrame() { }
+  constructor({ parent } = {}) {
+    this.parent = parent;
+  }
+  // onBeforeRender
+  // onRenderStart
+  // onRender() { }
+  // onRenderEnd
 }

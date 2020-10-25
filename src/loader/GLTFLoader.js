@@ -1,13 +1,16 @@
 import Loader from './index';
 import { warn } from '../helper/log';
-// import Texture from '../texture';
-// import Material from '../material';
-import Mesh from '../mesh';
-import SkinMesh from '../mesh/skinMesh';
+import Texture from '../material/texture';
+import Material from '../material';
+import Mesh from '../component/mesh';
+import SkinMesh from '../component/mesh/skinMesh';
 import GameObject from '../gameObject';
 import Scene from '../scene';
 import Joint from '../component/joint';
 import Camera from '../component/camera';
+import CameraScript from '../component/camera/script';
+import Light from '../component/light';
+import Component from '../component';
 
 const bufferMacro = {
   34962: 'ARRAY_BUFFER',
@@ -65,9 +68,34 @@ const accessorMacro = {
   MAT4: 16,
 };
 
-// function getMAT2FromTypeArray(typeArray) { }
-// function getMAT3FromTypeArray(typeArray) { }
-// function getMAT4FromTypeArray(typeArray) { }
+async function loadFile(src) {
+  const response = await fetch(src, {});
+  const file = await response.blob();
+  // this.objectURL = URL.createObjectURL(file);
+  return file;
+}
+
+async function getImageFileInfo(file) {
+  const objectURL = URL.createObjectURL(file);
+  const imgElm = document.createElement('img');
+  imgElm.width = '1';
+  imgElm.height = '1';
+  imgElm.src = objectURL;
+  const imgImfo = await new Promise((res, rej) => {
+    document.body.append(imgElm);
+    imgElm.addEventListener('load', () => {
+      document.body.removeChild(imgElm);
+      URL.revokeObjectURL(objectURL);
+      res({ width: imgElm.naturalWidth, height: imgElm.naturalHeight, imgElm });
+    });
+    imgElm.addEventListener('error', (err) => {
+      document.body.removeChild(imgElm);
+      URL.revokeObjectURL(objectURL);
+      rej(err);
+    });
+  });
+  return imgImfo;
+}
 
 /**
  * 依据accessor提取buffer中的内容并生成一个新的紧凑buffer
@@ -182,30 +210,131 @@ function parseAccessorToGl(accessor, totalInfos, ext) {
   };
 }
 
-function generatePrimitive(pri, totalInfos, ext) {
+function parseTextures(textures, sourceInfos, parsedInfo) {
+  const { images } = parsedInfo;
+  const { samplers } = sourceInfos;
+  return textures.map((texture) => {
+    const { sampler, source } = texture;
+    const textureInfo = {};
+    textureInfo.source = images[source];
+    if (sampler && samplers) {
+      textureInfo.sampler = samplers[sampler];
+    }
+    return textureInfo;
+  });
+}
+
+function parseMaterials(materials, ext) {
+  const { textures } = ext;
+  return materials.map((materialInfos) => {
+    const {
+      pbrMetallicRoughness,
+      normalTexture,
+      occlusionTexture,
+      emissiveTexture,
+    } = materialInfos;
+    const { baseColorTexture, metallicRoughnessTexture } = pbrMetallicRoughness;
+    const myMaterial = { ...materialInfos };
+    myMaterial.pbrMetallicRoughness = { ...pbrMetallicRoughness };
+    if (baseColorTexture) {
+      const { index, texCoord } = baseColorTexture;
+      myMaterial.pbrMetallicRoughness.baseColorTexture = new Texture({
+        ...textures[index],
+        texCoord,
+      });
+    }
+    if (metallicRoughnessTexture) {
+      const { index, texCoord } = metallicRoughnessTexture;
+      myMaterial.pbrMetallicRoughness.metallicRoughnessTexture = new Texture({
+        ...textures[index],
+        texCoord,
+      });
+    }
+    if (normalTexture) {
+      const { index, texCoord, scale } = normalTexture;
+      myMaterial.normalTexture = new Texture.NormalTexture({
+        ...textures[index],
+        texCoord,
+        scale,
+      });
+    }
+    if (occlusionTexture) {
+      const { index, texCoord, strength } = occlusionTexture;
+      myMaterial.occlusionTexture = new Texture.OcclusionTexture({
+        ...textures[index],
+        texCoord,
+        strength,
+      });
+    }
+    if (emissiveTexture) {
+      const { index, texCoord } = emissiveTexture;
+      myMaterial.emissiveTexture = new Texture({
+        ...textures[index],
+        texCoord,
+      });
+    }
+
+    return new Material(myMaterial);
+  });
+}
+
+function parseLight(lightInfos, { generator }) {
+  // 这个插件在导出GLTF文件时光的intensity参数没有做换算。导致光照不一致需要换算
+  const trans = {};
+  if (generator.all.indexOf('Khronos glTF Blender') > -1) {
+    trans.LightSpot = Light.transWToCd;
+    trans.LightPoint = Light.transWToCd;
+  }
+  const { intensity } = lightInfos;
+  switch (lightInfos.type) {
+    case 'directional':
+      return new Light.LightDirectional({
+        ...lightInfos,
+        intensity: trans.LightDirectional ? trans.LightDirectional(intensity) : intensity,
+      });
+    case 'spot':
+      return new Light.LightSpot({
+        ...lightInfos,
+        intensity: trans.LightSpot ? trans.LightSpot(intensity) : intensity,
+      });
+    case 'point':
+      return new Light.LightPoint({
+        ...lightInfos,
+        intensity: trans.LightPoint ? trans.LightPoint(intensity) : intensity,
+      });
+    default:
+      return new Light({ ...lightInfos });
+  }
+}
+
+function generatePrimitive(pri, totalInfos, parsedInfo) {
   const {
     attributes,
     indices,
-    // material,
+    material,
     // mode,
   } = pri;
   const { accessors } = totalInfos;
+  const { materials } = parsedInfo;
   const primitive = {};
   Object.entries(attributes).forEach(([name, value]) => {
     if (name === 'JOINTS_0') {
       // 一个顶点最多被4个joints影响，所以这里是vec4
       const joints4 = accessors[value];
       // 由于类型已知，所以这里直接读取typeArray就可以了。
-      primitive[name.toLowerCase()] = extractTypeArray(joints4, totalInfos, ext);
+      primitive[name.toLowerCase()] = extractTypeArray(joints4, totalInfos, parsedInfo);
     } else if (name === 'WEIGHTS_0') {
       // 同JOINTS_0
       const wegihts4 = accessors[value];
-      primitive[name.toLowerCase()] = extractTypeArray(wegihts4, totalInfos, ext);
+      primitive[name.toLowerCase()] = extractTypeArray(wegihts4, totalInfos, parsedInfo);
     } else {
-      primitive[name.toLowerCase()] = parseAccessorToGl(accessors[value], totalInfos, ext);
+      primitive[name.toLowerCase()] = parseAccessorToGl(accessors[value], totalInfos, parsedInfo);
     }
   });
-  primitive.indices = parseAccessorToGl(accessors[indices], totalInfos, ext);
+  if (Number.isInteger(material)) {
+    primitive.material = materials[material];
+  }
+  primitive.indices = parseAccessorToGl(accessors[indices], totalInfos, parsedInfo);
   return primitive;
 }
 
@@ -227,26 +356,65 @@ function parseMesh(meshInfos, totalInfos, ext) {
   return mesh;
 }
 
-function parseGameObject(nodeInfos, totalInfos, ext) {
-  const gameObj = new GameObject(nodeInfos);
-  const { nodes, meshes } = totalInfos;
-  const { mesh, children, skin } = nodeInfos;
+/**
+ * 解析GameObjects数据，这里需要注意并不是所有的nodes都是GameObject。
+ * 例如在blender中，会为light和camera多创建一个Light_Orientation，Camera_Orientation节点，
+ * 这个节点应该对应于功能组件
+ * @param {Array} sourceNodes 源数据中的nodes
+ * @param {Object} sourceInfos 源数据
+ * @param {Object} parsedInfos 已解析的相关数据
+ */
+function parseGameObjects(sourceNodes, sourceInfos, parsedInfos) {
+  const { nodes, meshes } = sourceInfos;
+  return sourceNodes.map((nodeId) => {
+    const nodeInfos = nodes[nodeId];
+    const {
+      mesh,
+      children,
+      skin,
+      extensions,
+      rotation,
+    } = nodeInfos;
 
-  if (mesh) {
-    if (Number.isInteger(skin)) {
-      gameObj.mesh = parseMesh({ ...(meshes[mesh]), skin }, totalInfos, ext);
-    } else {
-      gameObj.mesh = parseMesh(meshes[mesh], totalInfos, ext);
+    // TODO parse camera and light
+
+    // component node
+    if (extensions) {
+      // TODO: parse others extensions
+      // eslint-disable-next-line
+      const { KHR_lights_punctual } = extensions;
+      // eslint-disable-next-line
+      if (KHR_lights_punctual) {
+        const extInfos = sourceInfos.extensions.KHR_lights_punctual;
+        const lightInfos = extInfos.lights[KHR_lights_punctual.light];
+        return parseLight({ ...lightInfos, rotation }, parsedInfos);
+      }
     }
-  }
 
-  if (children && children.length > 0) {
-    children.forEach((node) => {
-      gameObj.addChild(parseGameObject(nodes[node], totalInfos, ext));
-    });
-  }
+    // gameObject node
+    const gameObj = new GameObject(nodeInfos);
 
-  return gameObj;
+    if (Number.isInteger(mesh)) {
+      if (Number.isInteger(skin)) {
+        gameObj.addComponent(parseMesh({ ...(meshes[mesh]), skin }, sourceInfos, parsedInfos));
+      } else {
+        gameObj.addComponent(parseMesh(meshes[mesh], sourceInfos, parsedInfos));
+      }
+    }
+
+    if (children && children.length > 0) {
+      const parsedChildren = parseGameObjects(children, sourceInfos, parsedInfos);
+      parsedChildren.forEach((child) => {
+        if (child instanceof GameObject) {
+          gameObj.addChild(child);
+        } else if (child instanceof Component) {
+          gameObj.addComponent(child);
+        }
+      });
+    }
+
+    return gameObj;
+  });
 }
 
 function parseJoint(jointId, totalInfos, ext) {
@@ -316,6 +484,77 @@ function parseSkins(skins, totalInfos, ext) {
   });
 }
 
+async function loadBuffers(buffers) {
+  const loadedBuffers = [];
+  const loadingBuffers = [];
+  const regBase64 = /^data:\S+;base64,/;
+  buffers.forEach((buffer, index) => {
+    if (regBase64.test(buffer.uri)) {
+      // 这里没有检查base64的合法性
+      const raw = window.atob(buffer.uri.replace(regBase64, ''));
+      const outputArray = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i += 1) {
+        outputArray[i] = raw.charCodeAt(i);
+      }
+      loadedBuffers[index] = {
+        byteLength: buffer.byteLength,
+        buffer: outputArray.buffer,
+      };
+    } else {
+      loadingBuffers.push(loadFile(buffer.uri).then(async (file) => {
+        const bff = await file.arrayBuffer();
+        loadedBuffers[index] = {
+          byteLength: buffer.byteLength,
+          buffer: bff,
+        };
+      }));
+    }
+  });
+  await Promise.all(loadingBuffers);
+  return loadedBuffers;
+}
+
+async function loadImages(images, bufferViews, buffers) {
+  const loadedImages = [];
+  const loadingImages = [];
+  images.forEach((image, index) => {
+    const {
+      uri,
+      mimeType,
+      name,
+      bufferView,
+    } = image;
+    if (uri) {
+      loadingImages.push((async () => {
+        const file = await loadFile(uri);
+        const fileInfo = await getImageFileInfo(file);
+        // const imageBuffer = await file.arrayBuffer();
+        loadedImages[index] = {
+          ...fileInfo,
+          name,
+          mimeType,
+        };
+      })());
+    } else if (Number.isInteger(bufferView)) {
+      const bufferViewInfos = bufferViews[bufferView];
+      const { byteOffset, byteLength } = bufferViewInfos;
+      const { buffer } = buffers[bufferViewInfos.buffer];
+      const imageBuffer = buffer.slice(byteOffset, byteOffset + byteLength);
+      const file = new File([imageBuffer], name, { type: mimeType });
+      loadingImages.push((async () => {
+        const fileInfo = await getImageFileInfo(file);
+        loadedImages[index] = {
+          ...fileInfo,
+          name,
+          mimeType,
+        };
+      })());
+    }
+  });
+  await Promise.all(loadingImages);
+  return loadedImages;
+}
+
 export default class GLTFLoader extends Loader {
   constructor(...args) {
     super(...args);
@@ -328,7 +567,7 @@ export default class GLTFLoader extends Loader {
   static get version() { return '0.0.1'; }
 
   static async load(src) {
-    const file = await GLTFLoader.loadFile(src);
+    const file = typeof src === 'string' ? await loadFile(src) : src;
     const text = await file.text();
     /**
      * 这里会丢失精度：
@@ -339,73 +578,65 @@ export default class GLTFLoader extends Loader {
     const infos = JSON.parse(text);
     console.log(infos);
     const scene = await GLTFLoader.parse(infos);
-    GLTFLoader.validator(infos.asset);
     return scene;
-  }
-
-  static async loadFile(src) {
-    const response = await fetch(src, {});
-    const file = await response.blob();
-    // this.objectURL = URL.createObjectURL(file);
-    return file;
-  }
-
-  static async loadBuffers(buffers) {
-    const loadedBuffers = [];
-    const loadingBuffers = [];
-    const regBase64 = /^data:\S+;base64,/;
-    buffers.forEach((buffer, index) => {
-      if (regBase64.test(buffer.uri)) {
-        // 这里没有检查base64的合法性
-        const raw = window.atob(buffer.uri.replace(regBase64, ''));
-        const outputArray = new Uint8Array(raw.length);
-        for (let i = 0; i < raw.length; i += 1) {
-          outputArray[i] = raw.charCodeAt(i);
-        }
-        loadedBuffers[index] = {
-          byteLength: buffer.byteLength,
-          buffer: outputArray.buffer,
-        };
-      } else {
-        loadingBuffers.push(GLTFLoader.loadFile(buffer.uri).then(async (file) => {
-          const bff = await file.arrayBuffer();
-          // TODO: parse buffer file
-          loadedBuffers[index] = {
-            byteLength: buffer.byteLength,
-            buffer: bff,
-          };
-        }));
-      }
-    });
-    await Promise.all(loadingBuffers);
-    return loadedBuffers;
   }
 
   static async parse(infos) {
     if (infos.scenes.length > 1) { warn('Only support one scene'); }
     const sceneInfos = infos.scenes[0];
-    const { nodes, buffers, skins } = infos;
-    const extInfo = {};
+    const {
+      buffers,
+      skins,
+      images,
+      bufferViews,
+      materials,
+      textures,
+      asset,
+    } = infos;
+
+    if (!GLTFLoader.validator(infos.asset)) { warn('unsupport GLTF file'); }
+
+    const parsedInfo = {};
+
+    const generator = GLTFLoader.pareGenerator(asset.generator);
+    parsedInfo.generator = generator;
 
     const scene = new Scene({ name: sceneInfos.name });
 
-    extInfo.buffers = await GLTFLoader.loadBuffers(buffers);
+    if (buffers) {
+      parsedInfo.buffers = await loadBuffers(buffers);
+    }
 
-    extInfo.skins = skins ? parseSkins(skins, infos, extInfo) : [];
+    // images use buffer data
+    if (images) {
+      parsedInfo.images = await loadImages(images, bufferViews, parsedInfo.buffers);
+    }
 
-    infos.scenes[0].nodes.forEach((node) => {
-      const gameObj = parseGameObject(
-        nodes[node],
-        infos,
-        extInfo,
-      );
-      scene.addGameObject(gameObj);
-    });
+    // textures use images data
+    if (textures) {
+      parsedInfo.textures = parseTextures(textures, infos, parsedInfo);
+    }
+
+    if (skins) {
+      parsedInfo.skins = parseSkins(skins, infos, parsedInfo);
+    }
+
+    if (materials) {
+      parsedInfo.materials = parseMaterials(materials, parsedInfo);
+    }
+
+    if (sceneInfos.nodes) {
+      const gameObjects = parseGameObjects(sceneInfos.nodes, infos, parsedInfo);
+      gameObjects.forEach((gameObj) => scene.addGameObject(gameObj));
+    }
 
     // 手动添加一个自己的摄像机
-    const cameraGameObj = new GameObject({});
+    const cameraGameObj = new GameObject({
+      translation: [0, 0, 3],
+    });
     cameraGameObj.isCamera = true;
     cameraGameObj.addComponent(new Camera({ parent: cameraGameObj }));
+    cameraGameObj.addComponent(new CameraScript({ parent: cameraGameObj }));
     scene.addGameObject(cameraGameObj);
 
     return scene;
@@ -414,9 +645,21 @@ export default class GLTFLoader extends Loader {
   static validator(assets) {
     const MIN_VERSION = '2.0';
     const MAX_VERSION = '2.0';
-    if (Loader.compareVersion(MIN_VERSION, assets.version) && Loader.compareVersion(MAX_VERSION, '2.0')) {
+    if (Loader.lessEqualVersion(MIN_VERSION, assets.version) && Loader.lessEqualVersion('2.0', MAX_VERSION)) {
       return true;
     }
     return true;
+  }
+
+  static pareGenerator(infoSting) {
+    const infos = {};
+    const regApp = /Blender/gi;
+    const regVersion = /\d(\.\d){1, 2}/g;
+    const version = regVersion.exec(infoSting);
+    const app = regApp.exec(infoSting);
+    infos.regApp = regApp ? app[0] : undefined;
+    infos.version = version ? version[1] : null;
+    infos.all = infoSting;
+    return infos;
   }
 }

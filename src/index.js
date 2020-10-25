@@ -2,6 +2,11 @@ import GLTFLoader from './loader/GLTFLoader';
 import StandardShader from './shader/standard';
 import Input from './input';
 
+// const { glMatrix } = require('gl-matrix');
+
+// TODO: 这个是需要全局设置？
+// glMatrix.setMatrixArrayType(Array);
+
 export default class Showcase {
   /**
    * constructor

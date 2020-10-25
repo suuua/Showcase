@@ -49,4 +49,21 @@ export default class Loader {
     }
     return 0;
   }
+
+  /**
+   * 比较版本号
+   * @param {String} v1
+   * @param {String} v2
+   */
+  static lessEqualVersion(v1, v2) {
+    const v1Arr = v1.split('.');
+    const v2Arr = v2.split('.');
+    const maxLength = Math.max(v1Arr.length, v2Arr.length);
+    for (let i = 0; i < maxLength; i += 1) {
+      if (!v1Arr[i] || v1Arr[i] > v2Arr[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
