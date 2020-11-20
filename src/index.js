@@ -1,5 +1,6 @@
 import GLTFLoader from './loader/GLTFLoader';
-import StandardShader from './shader/standard';
+import DefferShading from './shader/deffer';
+import DepthShading from './shader/depth';
 import Input from './input';
 
 // const { glMatrix } = require('gl-matrix');
@@ -27,17 +28,12 @@ export default class Showcase {
     this.$input = new Input({ canvas });
     // eslint-disable-next-line
     canvas.$showcaseInput = this.$input;
-    // 可以的shaders列表
-    this.$shaders = [new StandardShader({ gl: this.$gl })];
   }
 
-  /**
-   * 这个仅用于测试，还有很多问题要解决
-   * 问题2：多shader模式下的渲染
-   */
   draw() {
-    const shader = this.$shaders[0];
-    shader.draw(this.$scene);
+    // draw
+    const shading = new DefferShading({ gl: this.$gl });
+    shading.draw(this.$scene);
   }
 }
 

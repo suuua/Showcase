@@ -1,6 +1,6 @@
 import Texture from '../texture';
 import Material from '../material';
-import GameObject from '../gameObject';
+import GameObject from '../scene/gameObject';
 import Scene from '../scene';
 
 export function loadUrl(url) {

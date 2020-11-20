@@ -4,7 +4,7 @@ import Texture from '../material/texture';
 import Material from '../material';
 import Mesh from '../component/mesh';
 import SkinMesh from '../component/mesh/skinMesh';
-import GameObject from '../gameObject';
+import GameObject from '../scene/gameObject';
 import Scene from '../scene';
 import Joint from '../component/joint';
 import Camera from '../component/camera';
@@ -634,7 +634,6 @@ export default class GLTFLoader extends Loader {
     const cameraGameObj = new GameObject({
       translation: [0, 0, 3],
     });
-    cameraGameObj.isCamera = true;
     cameraGameObj.addComponent(new Camera({ parent: cameraGameObj }));
     cameraGameObj.addComponent(new CameraScript({ parent: cameraGameObj }));
     scene.addGameObject(cameraGameObj);

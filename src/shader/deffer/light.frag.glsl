@@ -1,23 +1,18 @@
 #version 300 es
+// #extension EXT_color_buffer_float : require
+// #extension EXT_color_buffer_half_float : require
 
-#ifdef GL_ES
-  precision mediump float;
-#endif
+precision mediump float;
 
-#pragma debug(on)
-
-in vec3 Normal;
-in vec3 FragPos;
-in vec2 TexCoord;
 
 out vec4 FragColor;
+in vec2 TexCoords;
 
-uniform vec3 lightColor;
-uniform vec3 lightPos;
-uniform vec3 viewPos;
-uniform sampler2D baseColorTex;
-uniform sampler2D texture2;
-uniform vec4 baseColorFactor;
+uniform sampler2D gPosition;
+uniform sampler2D gNormal;
+uniform sampler2D gAlbedoSpec;
+uniform sampler2D gDepth;
+uniform sampler2D shadowMap;
 
 // https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Khronos/KHR_lights_punctual/README.md
 struct DirLight  {
@@ -29,7 +24,6 @@ struct DirLight  {
 
 uniform DirLight dirLight;
 
-#define POINT_LIGHT_MAX_COUNT 10
 struct PointLight {
   vec3 position;
   vec3 color;
@@ -37,9 +31,8 @@ struct PointLight {
   float intensity;
   float range;
 };
-uniform PointLight pointLights[POINT_LIGHT_MAX_COUNT];
+uniform PointLight pointLights[@POINT_LIGHT_COUNT];
 
-#define SPOT_LIGHT_MAX_COUNT 10
 struct SpotLight {
   vec3 position;
   vec3 direction;
@@ -50,7 +43,10 @@ struct SpotLight {
   float innerConeAngle;
   float outerConeAngle;
 };
-uniform SpotLight spotLights[SPOT_LIGHT_MAX_COUNT];
+
+uniform SpotLight spotLights[@SPOT_LIGHT_COUNT];
+
+uniform vec3 viewPos;
 
 /*
  * TODO：改为PBR光照
@@ -63,7 +59,7 @@ float calcBaseLightStrength(vec3 lightDir, vec3 normal, vec3 viewDir) {
   // Blinn-Phong shader model
   float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
   // ambient diffuse spec
-  return 0.05 + (diff + spec) * 0.95;
+  return 0.2 + (diff + spec) * 0.8;
 }
 
 /*
@@ -133,14 +129,21 @@ vec3 calcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 }
 
 void main()
-{
+{             
+  // 从G缓冲中获取数据
+  vec3 FragPos = texture(gPosition, TexCoords).rgb;
+  vec3 Normal = texture(gNormal, TexCoords).rgb;
+  vec3 Albedo = texture(gAlbedoSpec, TexCoords).rgb;
+  float Specular = texture(gAlbedoSpec, TexCoords).a;
+
 
   vec3 viewDir = normalize(viewPos - FragPos);
   vec3 normal = normalize(Normal);
-  vec4 objectColor = texture(baseColorTex, TexCoord) * baseColorFactor;
 
   vec3 lightColor = calcDirLight(dirLight, normal, viewDir);
   vec3 pointLightColor = vec3(0.0);
+  // 遮挡导致的阴影系数
+  float shadow = 1.0 - texture(shadowMap, TexCoords).r;
   for (int i = 0; i < pointLights.length(); i++) {
     pointLightColor += calcPointLight(pointLights[i], normal, FragPos, viewDir);
   }
@@ -148,5 +151,6 @@ void main()
   for (int i = 0; i < spotLights.length(); i++) {
     spotLigColor += calcSpotLight(spotLights[i], normal, FragPos, viewDir);
   }
-  FragColor = vec4(lightColor + pointLightColor + spotLigColor, 1.0) * objectColor;
+  FragColor = vec4((lightColor + pointLightColor + spotLigColor) * shadow, 1.0) * vec4(Albedo, 1.0);
+  // FragColor = vec4(Albedo, 1.0);
 }

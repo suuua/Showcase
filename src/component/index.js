@@ -3,7 +3,7 @@ export default class Component {
     this.parent = parent;
   }
   // onBeforeRender
-  // onRenderStart
-  // onRender() { }
-  // onRenderEnd
+  // onRenderFrameStart
+  // onRenderFrame() { }
+  // onRenderFrameEnd
 }

@@ -2,8 +2,8 @@
  * material和shader是互相依赖的关系，shader决定material需要什么数据，可用什么选项。shader需要material的数据。
  */
 
-import Light from '../component/light';
-import Camera from '../component/camera';
+import Light from '../../component/light';
+import Camera from '../../component/camera';
 
 const glMatrixS = require('gl-matrix');
 
@@ -63,11 +63,19 @@ export default class GameObject {
   get scale() { return [...this.$scale]; }
 
   get isCamera() {
-    return this.components.findIndex((c) => c instanceof Light) > -1;
+    return this.components.findIndex((c) => c instanceof Camera) > -1;
+  }
+
+  get cameraComponent() {
+    return this.components.find((c) => c instanceof Camera);
   }
 
   get isLight() {
-    return this.components.findIndex((c) => c instanceof Camera) > -1;
+    return this.components.findIndex((c) => c instanceof Light) > -1;
+  }
+
+  get lightComponent() {
+    return this.components.find((c) => c instanceof Light);
   }
 
   resetChildL2wTrans() {

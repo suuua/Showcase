@@ -1,18 +1,33 @@
 import { warn } from '../helper/log';
 
-export default class Shader {
-  constructor({ gl, vsSource, fsSource }) {
-    this.$gl = gl;
-    const vertexShader = this.compileShader(gl.VERTEX_SHADER, vsSource);
-    const fragmentShader = this.compileShader(gl.FRAGMENT_SHADER, fsSource);
-    const shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
+/**
+ * 预编译着色器
+ * @param {String} source 着色器原字符
+ * @param {Object} predefined 需要替换的预定义变量
+ */
+function preCompileShader(source, predefined) {
+  let result = source;
+  Object.entries(predefined).forEach(([key, val]) => {
+    // 频繁的赋值常量会导致内存不停的创建/销毁
+    result = result.replace(new RegExp(`@${key}`, 'g'), val);
+  });
+  return result;
+}
 
-    gl.deleteShader(vertexShader);
-    gl.deleteShader(fragmentShader);
-    this.$shaderProgram = shaderProgram;
+export default class Shader {
+  constructor({
+    gl,
+    vsSource,
+    fsSource,
+    autoCompile = true,
+  }) {
+    this.$gl = gl;
+    this.$shaderProgram = null;
+    this.vsSource = vsSource;
+    this.fsSource = fsSource;
+    if (autoCompile) {
+      this.compileProgram();
+    }
   }
 
   /**
@@ -21,6 +36,28 @@ export default class Shader {
   static description() { return Object.create(null); }
 
   get gl() { return this.$gl; }
+
+  compileProgram(vsSourcePreDefined, fsSourcePredefined) {
+    const { vsSource, fsSource, gl } = this;
+    const vertexShader = this.compileShader(
+      gl.VERTEX_SHADER,
+      vsSourcePreDefined ? preCompileShader(vsSource, vsSourcePreDefined) : vsSource,
+    );
+    const fragmentShader = this.compileShader(
+      gl.FRAGMENT_SHADER,
+      fsSourcePredefined ? preCompileShader(fsSource, fsSourcePredefined) : fsSource,
+    );
+    const shaderProgram = gl.createProgram();
+    gl.attachShader(shaderProgram, vertexShader);
+    gl.attachShader(shaderProgram, fragmentShader);
+    gl.linkProgram(shaderProgram);
+
+    gl.deleteShader(vertexShader);
+    gl.deleteShader(fragmentShader);
+    this.$shaderProgram = shaderProgram;
+    this.vsSource = '';
+    this.fsSource = '';
+  }
 
   compileShader(type, source) {
     const gl = this.$gl;
@@ -107,16 +144,90 @@ export default class Shader {
     return texture;
   }
 
+  createEmptyDepthTexture2D(info) {
+    const gl = this.$gl;
+    const depthTexture = gl.createTexture();
+    const { width, height } = info;
+    gl.bindTexture(gl.TEXTURE_2D, depthTexture);
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.DEPTH_COMPONENT16,
+      width,
+      height,
+      0,
+      gl.DEPTH_COMPONENT,
+      gl.UNSIGNED_SHORT,
+      null,
+    );
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_FUNC, gl.GREATER);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    return depthTexture;
+  }
+
+  createEmptyColorTexture2D(info) {
+    const gl = this.$gl;
+    const depthTexture = gl.createTexture();
+    const { width, height } = info;
+    gl.bindTexture(gl.TEXTURE_2D, depthTexture);
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      width,
+      height,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      null,
+    );
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    return depthTexture;
+  }
+
+  createStandardPlainMesh() {
+    const gl = this.$gl;
+    const sourceData = [
+      -1.0, 1.0, 0.0, 0.0, 1.0,
+      -1.0, -1.0, 0.0, 0.0, 0.0,
+      1.0, 1.0, 0.0, 1.0, 1.0,
+      1.0, -1.0, 0.0, 1.0, 0.0,
+    ];
+    const VBOdata = new Float32Array(sourceData.length);
+    for (let i = 0; i < sourceData.length; i += 1) {
+      VBOdata[i] = sourceData[i];
+    }
+
+    const VAO = this.createBindVAO();
+    const VBO = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, VBO);
+    gl.bufferData(gl.ARRAY_BUFFER, VBOdata, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 5 * 4, 0);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 5 * 4, 3 * 4);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    gl.bindVertexArray(null);
+    return VAO;
+  }
+
   setInt(name, i) {
-    this.$gl.uniform1i(this.$gl.getUniformLocation(this.$shaderProgram, name, name), i);
+    this.$gl.uniform1i(this.$gl.getUniformLocation(this.$shaderProgram, name), i);
   }
 
   setFloat(name, f) {
-    this.$gl.uniform1f(this.$gl.getUniformLocation(this.$shaderProgram, name, name), f);
+    this.$gl.uniform1f(this.$gl.getUniformLocation(this.$shaderProgram, name), f);
   }
 
   setVec4(name, vec4) {
-    this.$gl.uniform4fv(this.$gl.getUniformLocation(this.$shaderProgram, name, name), vec4);
+    this.$gl.uniform4fv(this.$gl.getUniformLocation(this.$shaderProgram, name), vec4);
   }
 
   setMat4(name, martix) {

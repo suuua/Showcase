@@ -13,7 +13,7 @@ export default class MoveScript extends Component {
     this.camera = this.parent.getComponent('Camera');
   }
 
-  onRender({ env }) {
+  onRenderFrame({ env }) {
     const { rotation, translation } = this.parent;
     const { input, deltaTime } = env;
     const {

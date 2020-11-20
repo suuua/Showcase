@@ -30,6 +30,9 @@ export default class Camera extends Component {
     this.$near = near;
     this.$far = far;
     this.$persMat4 = mat4.create();
+
+    this.$dirtySpace = true;
+    this.$spaceMat4 = mat4.create();
     // 所属GameObject
     this.tag = 'Camera';
     this.$oldTrans = [];
@@ -74,6 +77,7 @@ export default class Camera extends Component {
       || !isEqualArray(this.$oldRotat, rotation)
     ) {
       this.$dirtyView = false;
+      this.$dirtySpace = true;
       this.$oldTrans = translation;
       this.$oldRotat = rotation;
       mat4.lookAt(
@@ -126,16 +130,21 @@ export default class Camera extends Component {
   get perspectiveMat4() {
     if (this.$dirtyPers) {
       this.$dirtyPers = false;
+      this.$dirtySpace = true;
       mat4.perspective(this.$persMat4, this.$fov, this.$aspect, this.$near, this.$far);
     }
     return this.$persMat4;
   }
 
-  onRenderStart(target) {
-    const { shader } = target;
-    // camera pos
-    shader.setMat4('perspective', this.perspectiveMat4);
-    shader.setMat4('view', this.viewMat4);
-    shader.setVec3('viewPos', this.parent.translation);
+  get spaceMat4() {
+    // 提前获取一次触发脏值检测
+    const { perspectiveMat4, viewMat4 } = this;
+    if (this.$dirtySpace) {
+      this.$dirtySpace = false;
+      mat4.multiply(this.$spaceMat4, perspectiveMat4, viewMat4);
+    }
+    return this.$spaceMat4;
   }
+
+  get position() { return this.parent.translation; }
 }

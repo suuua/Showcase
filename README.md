@@ -16,7 +16,25 @@
 4. 场景文件的解析可能需要大量耗时，这里使用Worker来处理。
 5. 减少浮点运算数精度来加快运算速度
 6. 材质的渲染中需要学习并实现 PBR（Physically Based Rendering）
+7. 计算摄像机位置（四元数）过慢导致画面卡顿
 
 ## QUESTION
 
 1. 在光的强度'intensity'中，GLTF定义为[lm/sr(cd)或lm/m^2(lx)](https://github.com/KhronosGroup/glTF/blob/master/extensions/2.0/Khronos/KHR_lights_punctual/README.md)。但是在blender中对点光源和聚光源直接使用能量(乘方)'w'作为单位，太阳光强度为w/m^2而点聚光源光源能量为w。blender在导出GLTF文件时直接将能量表示的单位写入到'intensity'中，没有进行换算。导致blender的光照效果与GLTF的严重脱节。
+2. 多光源渲染下使用 实时光线追踪（离线渲染，速度特别慢需要2分钟的渲染时间）还是集群延迟渲染？
+
+## note
+
+集群延迟渲染的论文目前完全看不懂[原文](http://www.cse.chalmers.se/~uffe/clustered_shading_preprint.pdf)[机器翻译](https://blog.csdn.net/magr_lemon/article/details/84571369)。这篇论文基于分块渲染和一些数学，图形学知识，导致完全看不懂。gitHub上有人实现了集群延迟渲染[Project5-WebGL-Clustered-Deferred-Forward-Plus](https://github.com/byumjin/Project5-WebGL-Clustered-Deferred-Forward-Plus)。因此尝试先实现延迟渲染然后试着研究并移植gitHub上的代码。
+
+## 参考文档
+
+[webgl 指南](https://www.khronos.org/registry/webgl/specs/latest/1.0/index.html)
+[OpenGL GLSL ES 指南](https://www.khronos.org/registry/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf)
+[OpenGL ES 指南](https://www.khronos.org/registry/OpenGL/specs/es/3.0/es_spec_3.0.pdf)
+[OpenGL ES API 手册](https://www.khronos.org/registry/OpenGL-Refpages/es3.0/)
+[webGL1 API 手册](https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/getContextAttributes)
+[webGL2 API 手册](https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext)
+[OpenGL 学习教程](https://learnopengl-cn.github.io/)
+[GLTF 文件 指南](https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#specifying-extensions)
+[blender 文档](https://docs.blender.org/manual/zh-hans/2.90/render/lights/light_object.html#sun-light)
