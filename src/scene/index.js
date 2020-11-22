@@ -74,9 +74,17 @@ export default class Scene {
     this.name = name;
     this.skybox = skybox;
 
+    this.$axiasArea = [[0, 0, 0], [0, 0, 0]];
+    this.$diagonal = 10;
     // this.interator = new Interator(this);
     // this.visitor = new Visitor(this);
   }
+
+  get axiasArea() { return [[...this.$axiasArea[0]], [...this.$axiasArea[1]]]; }
+
+  get diagonal() { return this.$diagonal; }
+
+  get diagonalPixel() { return Math.ceil(this.diagonal * 51.2); }
 
   addGameObject(gameObj) { this.gameObjects.push(gameObj); }
 
@@ -154,5 +162,31 @@ export default class Scene {
     this.eachComponents((component) => {
       if (component[hookName]) { component[hookName](options); }
     });
+  }
+
+  /**
+   * 获取场景在三维空间的尺寸。亦即计算场景的包围盒
+   */
+  updataSceneSize() {
+    // 计算区域范围（立方体）
+    const MAX = [0, 0, 0];
+    const MIN = [0, 0, 0];
+    this.eachGameObjects((obj) => {
+      const area = obj.getWorldAxiasArea();
+      if (area) {
+        area.forEach((group) => {
+          group.forEach((coord, index) => {
+            if (coord > MAX[index]) { MAX[index] = coord; }
+            if (coord < MIN[index]) { MIN[index] = coord; }
+          });
+        });
+      }
+    });
+    this.$axiasArea = [MAX, MIN];
+
+    // 计算对角线长度
+    this.$diagonal = (
+      (MAX[0] - MIN[0]) ** 2 + (MAX[1] - MIN[1]) ** 2 + (MAX[2] - MIN[2]) ** 2
+    ) ** 0.5;
   }
 }

@@ -634,9 +634,14 @@ export default class GLTFLoader extends Loader {
     const cameraGameObj = new GameObject({
       translation: [0, 0, 3],
     });
-    cameraGameObj.addComponent(new Camera({ parent: cameraGameObj }));
+    cameraGameObj.addComponent(new Camera({
+      parent: cameraGameObj,
+    }));
     cameraGameObj.addComponent(new CameraScript({ parent: cameraGameObj }));
     scene.addGameObject(cameraGameObj);
+
+    // 计算下区域
+    scene.updataSceneSize();
 
     return scene;
   }

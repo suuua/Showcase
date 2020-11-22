@@ -1,3 +1,3 @@
 # Standard shader piple
 
-Standard shader piple is the default piple for render scene and model.
+普通的前向渲染过程

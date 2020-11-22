@@ -10,7 +10,7 @@ const { mat4, vec3, quat } = require('gl-matrix');
 export default class Camera extends Component {
   constructor({
     // perspective 变换需要参数
-    fov = 45,
+    fov = (45 / 180) * Math.PI,
     aspect = 1,
     near = 0.1,
     far = 100,
@@ -131,7 +131,13 @@ export default class Camera extends Component {
     if (this.$dirtyPers) {
       this.$dirtyPers = false;
       this.$dirtySpace = true;
-      mat4.perspective(this.$persMat4, this.$fov, this.$aspect, this.$near, this.$far);
+      mat4.perspective(
+        this.$persMat4,
+        this.$fov,
+        this.$aspect,
+        this.$near,
+        this.$far,
+      );
     }
     return this.$persMat4;
   }

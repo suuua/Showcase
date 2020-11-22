@@ -12,12 +12,14 @@ uniform mat4 lightSpaceMatrix;
 out vec4 lightSpacePos;
 out vec4 cameraSpacePos;
 out vec3 normal;
+out vec3 fragPos;
 
 void main()
 {
   vec4 wordPos = model * vec4(position, 1.0);
-  lightSpacePos = lightSpaceMatrix * wordPos;
   cameraSpacePos = cameraSpaceMatrix * wordPos;
+  lightSpacePos = lightSpaceMatrix * wordPos;
   normal = mat3(transpose(inverse(model))) * aNormal;
+  fragPos = vec3(wordPos);
   gl_Position = cameraSpacePos;
 }

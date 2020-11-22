@@ -2,19 +2,13 @@ import Shader from '../index';
 import fsSource from './merge2DMaps.frag.glsl';
 import vsSource from './merge2DMaps.vert.glsl';
 
-const { mat4 } = require('gl-matrix');
-
 /**
  * 这里使用模板还是贴图
  */
 export default class Merge2DMapsShader extends Shader {
   constructor({ gl }) {
     super({ gl, fsSource, vsSource });
-    const { width, height } = gl.canvas;
-    this.FBOS = [
-      this.$createFrameBuffer({ width, height }),
-      this.$createFrameBuffer({ width, height }),
-    ];
+    this.FBOS = [];
   }
 
   $createFrameBuffer(info) {
@@ -81,7 +75,6 @@ export default class Merge2DMapsShader extends Shader {
 
   draw(scene, depthMapinfos) {
     const gl = this.$gl;
-    const { width, height } = this.$gl.canvas;
     const camera = scene.getCameraComponent();
     this.use();
     let renderObjects = [];
@@ -90,24 +83,28 @@ export default class Merge2DMapsShader extends Shader {
         component.setMeshRenderData({ shader: this }),
       );
     });
+    if (this.FBOS.length === 0) {
+      const bufferInfo = { width: scene.diagonalPixel, height: scene.diagonalPixel };
+      this.FBOS = [
+        this.$createFrameBuffer(bufferInfo),
+        this.$createFrameBuffer(bufferInfo),
+      ];
+    }
     this.$clearFBOS();
+
     this.setMat4('cameraSpaceMatrix', camera.spaceMat4);
     this.setInt('preShadowDepthMap', 0);
     this.setInt('depthMap', 1);
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LESS);
+
     let result;
     depthMapinfos.forEach((info, index) => {
-      const { depthMap, light } = info;
+      const { depthMap, light, lightSpaceMatrix } = info;
       const source = this.FBOS[index % 2];
       const target = this.FBOS[1 - (index % 2)];
       const [FBO, depthTexture] = target;
-      const lightSpaceMatrix = mat4.create();
-      mat4.multiply(
-        lightSpaceMatrix,
-        light.perspectiveMat4({ width, height }),
-        light.viewMat4(),
-      );
+
       gl.bindFramebuffer(gl.FRAMEBUFFER, FBO);
       // eslint-disable-next-line
       gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
@@ -118,6 +115,12 @@ export default class Merge2DMapsShader extends Shader {
       gl.bindTexture(gl.TEXTURE_2D, depthMap);
       this.setMat4('lightSpaceMatrix', lightSpaceMatrix);
       this.setVec3('light.direction', light.direction);
+      if (light.tag === 'LightSpot') {
+        this.setVec3('light.position', light.position);
+        this.setUInt('lightType', 2);
+      } else {
+        this.setUInt('lightType', 1);
+      }
 
       // render GameObject
       renderObjects.forEach(({

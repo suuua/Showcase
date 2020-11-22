@@ -1,5 +1,5 @@
 import DirectionSpotShader from './directionSpot';
-// import DisplayShader from './display';
+import DisplayShader from './display';
 import Merge2DMapsShader from './merge2DMaps';
 
 export default class Shading {
@@ -9,26 +9,27 @@ export default class Shading {
     this.$dDepthMapInfos = null;
     this.$mergeShader = new Merge2DMapsShader({ gl });
 
-    // this.$debugPlayer = new DisplayShader({ gl });
+    this.$debugPlayer = new DisplayShader({ gl });
   }
 
   // calc depth map
   draw(scene) {
     const gl = this.$gl;
     const { width, height } = gl.canvas;
-    const viewPortWidth = width;
-    const widthPortHeight = height;
+    const viewPortWidth = scene.diagonalPixel;
 
+    gl.viewport(0, 0, viewPortWidth, viewPortWidth);
     if (!this.$dDepthMapInfos) {
-      this.$dDepthMapInfos = this.$ldShader.draw(scene, viewPortWidth, widthPortHeight);
+      this.$dDepthMapInfos = this.$ldShader.draw(scene);
     }
 
     // TODO: point light
 
     const depthMap = this.$mergeShader.draw(scene, this.$dDepthMapInfos);
-
     // this.$debugPlayer.draw({ depthMap });
 
+    // 恢复默认大小
+    gl.viewport(0, 0, width, height);
     return depthMap;
   }
 }

@@ -2,8 +2,6 @@ import Shader from '../index';
 import vsSource from './directionSpot.vert.glsl';
 import fsSource from './directionSpot.frag.glsl';
 
-const { mat4 } = require('gl-matrix');
-
 export default class DirectionShader extends Shader {
   constructor({ gl }) {
     super({ gl, vsSource, fsSource });
@@ -31,7 +29,7 @@ export default class DirectionShader extends Shader {
   /**
    * 绘制每光源的阴影贴图
    */
-  draw(scene, viewWidth, viewHeight) {
+  draw(scene) {
     const gl = this.$gl;
     this.use();
     let renderObjects = [];
@@ -40,7 +38,6 @@ export default class DirectionShader extends Shader {
         component.setMeshRenderData({ shader: this }),
       );
     });
-    gl.viewport(0, 0, viewWidth, viewHeight);
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
     gl.depthFunc(gl.LESS);
@@ -48,20 +45,20 @@ export default class DirectionShader extends Shader {
     gl.colorMask(false, false, false, false);
     const direction = scene.filterLightDirectionComponents();
     const spot = scene.filterLightSpotComponents();
+    const viewPortWidth = scene.diagonalPixel;
     const result = direction.concat(spot).map((component) => {
-      const { FBO, depthMap } = this.$createDepthMap(viewWidth, viewHeight);
+      const { FBO, depthMap } = this.$createDepthMap(viewPortWidth, viewPortWidth);
       // bindFramebuffer 必须在clear之上，不然无法绑定成功
       gl.bindFramebuffer(gl.FRAMEBUFFER, FBO);
       // gl.clearColor(0, 0, 0, 1.0);
       // eslint-disable-next-line
       // gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
       gl.clear(gl.DEPTH_BUFFER_BIT);
-      const lightSpaceMatrix = mat4.create();
-      mat4.multiply(
-        lightSpaceMatrix,
-        component.perspectiveMat4({ width: viewWidth, height: viewHeight }),
-        component.viewMat4(),
-      );
+      const position = scene.axiasArea[0].map((i) => i + 1);
+      const lightSpaceMatrix = component.getSpaceMat4({
+        position,
+        width: scene.diagonal,
+      });
       this.setMat4('lightSpaceMatrix', lightSpaceMatrix);
       // render Mesh
       renderObjects.forEach(({
@@ -76,6 +73,7 @@ export default class DirectionShader extends Shader {
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       return {
         depthMap,
+        lightSpaceMatrix,
         light: component,
       };
     });

@@ -17,6 +17,7 @@
 5. 减少浮点运算数精度来加快运算速度
 6. 材质的渲染中需要学习并实现 PBR（Physically Based Rendering）
 7. 计算摄像机位置（四元数）过慢导致画面卡顿
+8. 文件没有光源情况下默认光源的添加
 
 ## QUESTION
 
@@ -26,6 +27,8 @@
 ## note
 
 集群延迟渲染的论文目前完全看不懂[原文](http://www.cse.chalmers.se/~uffe/clustered_shading_preprint.pdf)[机器翻译](https://blog.csdn.net/magr_lemon/article/details/84571369)。这篇论文基于分块渲染和一些数学，图形学知识，导致完全看不懂。gitHub上有人实现了集群延迟渲染[Project5-WebGL-Clustered-Deferred-Forward-Plus](https://github.com/byumjin/Project5-WebGL-Clustered-Deferred-Forward-Plus)。因此尝试先实现延迟渲染然后试着研究并移植gitHub上的代码。
+
+在阴影与光照反面，光线追踪是目前最为理想的方式，但是光线追踪和阴影映射阴影体积是两种不同的实现。光线追踪主要是依据光线的物理特性（多个物体间反射，折射）来实现，其需要使用CPU来进行大量的计算。由于OpenGl基于光栅化，因而无法实现光线追踪算法，只能使用阴影映射，阴影体积这种类似算法。
 
 ## 参考文档
 

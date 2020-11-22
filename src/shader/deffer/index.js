@@ -12,9 +12,10 @@ export default class Shading {
 
   draw(scene) {
     const gl = this.$gl;
+    const SCR_WIDTH = gl.canvas.width;
+    const SCR_HEIGHT = gl.canvas.height;
     const camera = scene.getCameraComponent();
-    // const SCR_WIDTH = gl.canvas.width;
-    // const SCR_HEIGHT = gl.canvas.height;
+    camera.aspect = SCR_WIDTH / SCR_HEIGHT;
     const [lightDirectionComponent] = scene.filterLightDirectionComponents();
     const lightSpotComponents = scene.filterLightSpotComponents();
     scene.callHook('onBeforeRender');
@@ -47,13 +48,13 @@ export default class Shading {
       gDepth,
     ] = this.gBufferShader.createFrameBuffer();
     shader.use();
-    // set texture position
+    // set texture
     shader.setInt('gPosition', 0);
     shader.setInt('gNormal', 1);
     shader.setInt('gAlbedoSpec', 2);
     shader.setInt('gDepth', 3);
     shader.setInt('shadowMap', 4);
-    // set direction light
+    // set directional light
     shader.setVec3('dirLight.direction', lightDirectionComponent.direction);
     shader.setVec3('dirLight.color', lightDirectionComponent.color);
     shader.setFloat('dirLight.intensity', lightDirectionComponent.intensity);
@@ -78,10 +79,7 @@ export default class Shading {
       const deltaTime = (time - preFrameTime) / 1000;
       preFrameTime = time;
       const input = gl.canvas.$showcaseInput.processInput();
-      const env = {
-        input,
-        deltaTime,
-      };
+      const env = { input, deltaTime };
       scene.callHook('onRenderFrameStart', { env });
       gl.clearColor(0, 0, 0, 1.0);
       // GBuffer start

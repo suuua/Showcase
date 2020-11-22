@@ -8,7 +8,9 @@ export default class LightSpot extends Light {
   constructor(infos) {
     super(infos);
     this.tag = 'LightSpot';
+    // range 为0 代表光源为无穷范围
     this.range = infos.range || 0;
+    // 注意这里是半角
     this.innerConeAngle = infos.spot.innerConeAngle || 0;
     this.outerConeAngle = infos.spot.outerConeAngle || Math.PI / 4;
 
@@ -29,36 +31,39 @@ export default class LightSpot extends Light {
     return direction;
   }
 
-  // 这些计算过程和Camera一样
-  get rotateTarget() {
-    const target = vec3.create();
-    vec3.add(target, this.position, this.direction);
-    return target;
-  }
+  getSpaceMat4({ width, aspect }) {
+    const vecPos = vec3.fromValues(...this.position);
+    const persMat4 = mat4.create();
+    mat4.perspective(
+      persMat4,
+      this.outerConeAngle * 2,
+      aspect || 1,
+      0.1,
+      this.range || Math.ceil(width) * 10,
+    );
 
-  get rotateUp() {
+    const target = vec3.create();
+    vec3.add(target, vecPos, this.direction);
+
     const { rotation } = this.parent;
     const up = vec3.fromValues(0, 0, -1);
     vec3.transformQuat(up, up, quat.fromValues(...rotation));
     vec3.normalize(up, up);
-    return up;
-  }
 
-  viewMat4() {
     const viewMat4 = mat4.create();
     mat4.lookAt(
       viewMat4,
-      vec3.fromValues(...this.position),
-      vec3.fromValues(...this.rotateTarget),
-      vec3.fromValues(...this.rotateUp),
+      vecPos,
+      target,
+      up,
     );
-    return viewMat4;
-  }
 
-  // eslint-disable-next-line
-  perspectiveMat4({ width, height }) {
-    const persMat4 = mat4.create();
-    mat4.perspective(persMat4, this.outerConeAngle, width / height, 0.01, 50);
-    return persMat4;
+    const lightSpaceMatrix = mat4.create();
+    mat4.multiply(
+      lightSpaceMatrix,
+      persMat4,
+      viewMat4,
+    );
+    return lightSpaceMatrix;
   }
 }

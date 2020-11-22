@@ -1,14 +1,15 @@
 #version 300 es
 
-precision mediump float;
-precision mediump sampler2DShadow;
-precision mediump sampler2D;
-precision lowp usampler2D;
+precision highp float;
+precision highp sampler2DShadow;
+precision highp sampler2D;
 
 struct LightBase {
   vec3 direction;
+  vec3 position;
 };
 
+uniform uint lightType;
 uniform sampler2D preShadowDepthMap;
 uniform sampler2DShadow depthMap;
 uniform LightBase light;
@@ -16,6 +17,7 @@ uniform LightBase light;
 in vec3 normal;
 in vec4 lightSpacePos;
 in vec4 cameraSpacePos;
+in vec3 fragPos;
 
 layout (location = 0) out vec4 shadowDepth;
 
@@ -33,7 +35,13 @@ vec3 calcTexCoord(vec4 spacePos)
 void main()
 {
   // 用于改善阴影失真
-  float bias = max(0.005 * (1.0 - dot(normal, light.direction)), 0.0005);
+  float bias = 0.0;
+  if (lightType == uint(1)) {
+    bias = max(0.005 * (1.0 - dot(normal, -light.direction)), 0.0005);
+  } else {
+    vec3 lightDir = normalize(light.position - fragPos);
+    bias = max(0.0001 * (1.0 - dot(normal, lightDir)), 0.00001);
+  }
   vec3 texCamerCoord = calcTexCoord(cameraSpacePos);
   vec4 preShadowDepth = texture(preShadowDepthMap, texCamerCoord.xy);
   vec3 texLightCoord = calcTexCoord(lightSpacePos);

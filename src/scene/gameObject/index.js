@@ -4,14 +4,14 @@
 
 import Light from '../../component/light';
 import Camera from '../../component/camera';
-
-const glMatrixS = require('gl-matrix');
+import Mesh from '../../component/mesh';
 
 const {
   mat4,
   vec3,
   quat,
-} = glMatrixS;
+  vec4,
+} = require('gl-matrix');
 
 const wordTransMat4 = mat4.create();
 mat4.fromRotationTranslationScale(
@@ -38,7 +38,6 @@ export default class GameObject {
     this.$children = [];
     this.name = name;
     this.weights = weights;
-    this.mesh = null;
     this.skin = skin;
 
     // Transformations
@@ -68,6 +67,10 @@ export default class GameObject {
 
   get cameraComponent() {
     return this.components.find((c) => c instanceof Camera);
+  }
+
+  get meshComponent() {
+    return this.components.find((c) => c instanceof Mesh);
   }
 
   get isLight() {
@@ -128,5 +131,22 @@ export default class GameObject {
     child.l2wTransMat4 = mat4.create();
     mat4.multiply(child.l2wTransMat4, this.l2wTransMat4, this.matrix);
     this.$children.push(child);
+  }
+
+  // TODO: 这里计算量可能会很大，需要缓存优化
+  getWorldAxiasArea() {
+    const { meshComponent } = this;
+    if (!meshComponent) { return null; }
+    const meshAxiasArea = meshComponent.getAxiasArea();
+    const wordMax = vec4.create();
+    const wordMin = vec4.create();
+    const modelMartix = mat4.create();
+    mat4.multiply(modelMartix, this.l2wTransMat4, this.matrix);
+    vec4.transformMat4(wordMax, vec4.fromValues(...meshAxiasArea[0], 1), modelMartix);
+    vec4.transformMat4(wordMin, vec4.fromValues(...meshAxiasArea[1], 1), modelMartix);
+    return [
+      [wordMax[0], wordMax[1], wordMax[2]],
+      [wordMin[0], wordMin[1], wordMin[2]],
+    ];
   }
 }

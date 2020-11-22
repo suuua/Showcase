@@ -222,6 +222,10 @@ export default class Shader {
     this.$gl.uniform1i(this.$gl.getUniformLocation(this.$shaderProgram, name), i);
   }
 
+  setUInt(name, i) {
+    this.$gl.uniform1ui(this.$gl.getUniformLocation(this.$shaderProgram, name), i);
+  }
+
   setFloat(name, f) {
     this.$gl.uniform1f(this.$gl.getUniformLocation(this.$shaderProgram, name), f);
   }
