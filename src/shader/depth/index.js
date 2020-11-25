@@ -1,4 +1,5 @@
 import DirectionSpotShader from './directionSpot';
+import PointShader from './point';
 import DisplayShader from './display';
 import Merge2DMapsShader from './merge2DMaps';
 
@@ -6,6 +7,7 @@ export default class Shading {
   constructor({ gl }) {
     this.$gl = gl;
     this.$ldShader = new DirectionSpotShader({ gl });
+    this.$pointShader = new PointShader({ gl });
     this.$dDepthMapInfos = null;
     this.$mergeShader = new Merge2DMapsShader({ gl });
 
@@ -20,10 +22,10 @@ export default class Shading {
 
     gl.viewport(0, 0, viewPortWidth, viewPortWidth);
     if (!this.$dDepthMapInfos) {
-      this.$dDepthMapInfos = this.$ldShader.draw(scene);
+      const depthMapsDS = this.$ldShader.draw(scene);
+      const pointDepthMaps = this.$pointShader.draw(scene);
+      this.$dDepthMapInfos = [...depthMapsDS, ...pointDepthMaps];
     }
-
-    // TODO: point light
 
     const depthMap = this.$mergeShader.draw(scene, this.$dDepthMapInfos);
     // this.$debugPlayer.draw({ depthMap });

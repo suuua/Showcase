@@ -39,20 +39,20 @@ export default class Shading {
       POINT_LIGHT_COUNT: lightSpotComponents.length,
       SPOT_LIGHT_COUNT: 1,
     });
-    const [
+    const {
       FBO,
-      gPosition,
-      gNormal,
-      gAlbedoSpec,
-      RBODepth,
-      gDepth,
-    ] = this.gBufferShader.createFrameBuffer();
+      positionTexture,
+      normalTexture,
+      albedoOcclusionTexture,
+      depthMetallicRoughnessTexture,
+      // depthRBO,
+    } = this.gBufferShader.createFrameBuffer();
     shader.use();
     // set texture
     shader.setInt('gPosition', 0);
     shader.setInt('gNormal', 1);
-    shader.setInt('gAlbedoSpec', 2);
-    shader.setInt('gDepth', 3);
+    shader.setInt('gAlbedoOcclusion', 2);
+    shader.setInt('gDepthMetallicRoughness', 3);
     shader.setInt('shadowMap', 4);
     // set directional light
     shader.setVec3('dirLight.direction', lightDirectionComponent.direction);
@@ -124,13 +124,13 @@ export default class Shading {
       // eslint-disable-next-line
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, gPosition);
+      gl.bindTexture(gl.TEXTURE_2D, positionTexture);
       gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, gNormal);
+      gl.bindTexture(gl.TEXTURE_2D, normalTexture);
       gl.activeTexture(gl.TEXTURE2);
-      gl.bindTexture(gl.TEXTURE_2D, gAlbedoSpec);
+      gl.bindTexture(gl.TEXTURE_2D, albedoOcclusionTexture);
       gl.activeTexture(gl.TEXTURE3);
-      gl.bindTexture(gl.TEXTURE_2D, gDepth);
+      gl.bindTexture(gl.TEXTURE_2D, depthMetallicRoughnessTexture);
       gl.activeTexture(gl.TEXTURE4);
       gl.bindTexture(gl.TEXTURE_2D, shadowMap);
       // set camera data

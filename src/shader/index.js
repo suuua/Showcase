@@ -152,12 +152,12 @@ export default class Shader {
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,
-      gl.DEPTH_COMPONENT16,
+      gl.DEPTH_COMPONENT32F,
       width,
       height,
       0,
       gl.DEPTH_COMPONENT,
-      gl.UNSIGNED_SHORT,
+      gl.FLOAT,
       null,
     );
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);

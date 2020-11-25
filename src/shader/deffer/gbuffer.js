@@ -31,8 +31,8 @@ export default class GBufferShader extends Shader {
      */
     gl.getExtension('EXT_color_buffer_float');
     // - 位置颜色缓冲
-    const gBufferPos = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, gBufferPos);
+    const positionTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, positionTexture);
     // OpenGl ES 文档中 RGB16F 和 RGB32F 不是 rendable 不能用作颜色附着的纹理文件格式？
     gl.texImage2D(
       gl.TEXTURE_2D,
@@ -47,12 +47,18 @@ export default class GBufferShader extends Shader {
     );
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, gBufferPos, 0);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0,
+      gl.TEXTURE_2D,
+      positionTexture,
+      0,
+    );
     gl.bindTexture(gl.TEXTURE_2D, null);
 
     // - 法线颜色缓冲
-    const gBufferNormal = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, gBufferNormal);
+    const normalTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, normalTexture);
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,
@@ -66,12 +72,12 @@ export default class GBufferShader extends Shader {
     );
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, gBufferNormal, 0);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, normalTexture, 0);
     gl.bindTexture(gl.TEXTURE_2D, null);
 
     // - 颜色 + 镜面颜色缓冲
-    const gBufferAlbedoSpec = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, gBufferAlbedoSpec);
+    const albedoOcclusionTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, albedoOcclusionTexture);
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,
@@ -89,14 +95,14 @@ export default class GBufferShader extends Shader {
       gl.FRAMEBUFFER,
       gl.COLOR_ATTACHMENT2,
       gl.TEXTURE_2D,
-      gBufferAlbedoSpec,
+      albedoOcclusionTexture,
       0,
     );
     gl.bindTexture(gl.TEXTURE_2D, null);
 
     // - 深度缓冲
-    const gDepth = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, gDepth);
+    const depthMetallicRoughnessTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, depthMetallicRoughnessTexture);
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,
@@ -110,7 +116,13 @@ export default class GBufferShader extends Shader {
     );
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT3, gl.TEXTURE_2D, gDepth, 0);
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT3,
+      gl.TEXTURE_2D,
+      depthMetallicRoughnessTexture,
+      0,
+    );
     gl.bindTexture(gl.TEXTURE_2D, null);
 
     gl.drawBuffers([
@@ -121,15 +133,22 @@ export default class GBufferShader extends Shader {
     ]);
 
     // - 深度信息
-    const RBODepth = gl.createRenderbuffer();
-    gl.bindRenderbuffer(gl.RENDERBUFFER, RBODepth);
+    const depthRBO = gl.createRenderbuffer();
+    gl.bindRenderbuffer(gl.RENDERBUFFER, depthRBO);
     // 为了能复制缓冲，源和目标缓冲格式必须相同，因此这里最好和默认缓冲的深度缓冲格式一致
     // 这里各种格式都试过，都无法复制到默认深度缓冲，为什么？
     gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, SCR_WIDTH, SCR_HEIGHT);
-    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, RBODepth);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthRBO);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-    return [FBO, gBufferPos, gBufferNormal, gBufferAlbedoSpec, RBODepth, gDepth];
+    return {
+      FBO,
+      positionTexture,
+      normalTexture,
+      albedoOcclusionTexture,
+      depthMetallicRoughnessTexture,
+      depthRBO,
+    };
   }
 }

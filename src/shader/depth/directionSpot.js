@@ -21,7 +21,7 @@ export default class DirectionShader extends Shader {
       0,
     );
     gl.drawBuffers([gl.NONE]);
-    // gl.readBuffer(gl.NONE);
+    gl.readBuffer(gl.NONE);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     return { FBO, depthMap };
   }

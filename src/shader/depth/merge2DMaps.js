@@ -113,13 +113,18 @@ export default class Merge2DMapsShader extends Shader {
       gl.bindTexture(gl.TEXTURE_2D, source[1]);
       gl.activeTexture(gl.TEXTURE1);
       gl.bindTexture(gl.TEXTURE_2D, depthMap);
+      this.setFloat('light.intensity', light.intensity);
       this.setMat4('lightSpaceMatrix', lightSpaceMatrix);
-      this.setVec3('light.direction', light.direction);
-      if (light.tag === 'LightSpot') {
+      if (light.tag === 'LightDirection') {
+        this.setVec3('light.direction', light.direction);
+        this.setUInt('lightType', 1);
+      } else if (light.tag === 'LightSpot') {
+        this.setVec3('light.direction', light.direction);
         this.setVec3('light.position', light.position);
         this.setUInt('lightType', 2);
       } else {
-        this.setUInt('lightType', 1);
+        this.setVec3('light.position', light.position);
+        this.setUInt('lightType', 3);
       }
 
       // render GameObject
