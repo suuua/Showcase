@@ -6,6 +6,7 @@ export default class LightDirectional extends Light {
   constructor(opt) {
     super(opt);
     this.tag = 'LightDirection';
+    this.type = 1;
     // TODO：这个参数是太阳光的角直径？
     this.rotation = opt.rotation;
     //  this.$fakePosition = [10, 10, 10];

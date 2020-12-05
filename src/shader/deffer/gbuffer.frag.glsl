@@ -16,9 +16,9 @@ in vec3 FragPos;
 in vec3 Normal;
 
 uniform vec4 baseColorFactor;
-uniform sampler2D baseColorTex;
 uniform float roughnessFactor;
 uniform float metallicFactor;
+uniform sampler2D baseColorTex;
 uniform sampler2D metallicRoughnessTexture;
 uniform sampler2D normalTexture;
 uniform sampler2D occlusionTexture;

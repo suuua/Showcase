@@ -1,16 +1,16 @@
 import Loader from './index';
 import { warn } from '../helper/log';
-import Texture from '../material/texture';
-import Material from '../material';
-import Mesh from '../component/mesh';
-import SkinMesh from '../component/mesh/skinMesh';
+import Texture from '../scene/material/texture';
+import Material from '../scene/material';
+import Mesh from '../scene/component/mesh';
+import SkinMesh from '../scene/component/mesh/skinMesh';
 import GameObject from '../scene/gameObject';
 import Scene from '../scene';
-import Joint from '../component/joint';
-import Camera from '../component/camera';
-import CameraScript from '../component/camera/script';
-import Light from '../component/light';
-import Component from '../component';
+import Joint from '../scene/component/joint';
+import Camera from '../scene/component/camera';
+import CameraScript from '../scene/component/camera/script';
+import Light from '../scene/component/light';
+import Component from '../scene/component';
 
 const bufferMacro = {
   34962: 'ARRAY_BUFFER',
@@ -312,21 +312,18 @@ function generatePrimitive(pri, totalInfos, parsedInfo) {
     attributes,
     indices,
     material,
-    // mode,
+    mode,
+    targets,
   } = pri;
   const { accessors } = totalInfos;
   const { materials } = parsedInfo;
   const primitive = {};
   Object.entries(attributes).forEach(([name, value]) => {
-    if (name === 'JOINTS_0') {
+    if (name.indexOf('JOINTS_') > -1 || name.indexOf('WEIGHTS_') > -1) {
       // 一个顶点最多被4个joints影响，所以这里是vec4
       const joints4 = accessors[value];
       // 由于类型已知，所以这里直接读取typeArray就可以了。
       primitive[name.toLowerCase()] = extractTypeArray(joints4, totalInfos, parsedInfo);
-    } else if (name === 'WEIGHTS_0') {
-      // 同JOINTS_0
-      const wegihts4 = accessors[value];
-      primitive[name.toLowerCase()] = extractTypeArray(wegihts4, totalInfos, parsedInfo);
     } else {
       primitive[name.toLowerCase()] = parseAccessorToGl(accessors[value], totalInfos, parsedInfo);
     }
@@ -335,6 +332,9 @@ function generatePrimitive(pri, totalInfos, parsedInfo) {
     primitive.material = materials[material];
   }
   primitive.indices = parseAccessorToGl(accessors[indices], totalInfos, parsedInfo);
+  primitive.mode = mode;
+  // 这个有点像是 用于动画的属性
+  primitive.targets = targets;
   return primitive;
 }
 

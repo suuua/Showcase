@@ -1,3 +1,5 @@
+export { default as commonShaderData } from './commonShaderData';
+
 export function arr2vec(arr, count = 2) {
   let length = count;
   if (length > 4) { length = 4; } else if (length < 2) { length = 2; }

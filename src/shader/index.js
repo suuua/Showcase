@@ -30,11 +30,6 @@ export default class Shader {
     }
   }
 
-  /**
-   * TODO: 用于描述着色器的参数，属性，变量顺序等内容以期望components和shader解耦
-   */
-  static description() { return Object.create(null); }
-
   get gl() { return this.$gl; }
 
   compileProgram(vsSourcePreDefined, fsSourcePredefined) {
@@ -51,6 +46,10 @@ export default class Shader {
     gl.attachShader(shaderProgram, vertexShader);
     gl.attachShader(shaderProgram, fragmentShader);
     gl.linkProgram(shaderProgram);
+
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+      warn(`Could not link compile WebGL program. \n\n ${gl.getProgramInfoLog(shaderProgram)}`);
+    }
 
     gl.deleteShader(vertexShader);
     gl.deleteShader(fragmentShader);
@@ -162,8 +161,10 @@ export default class Shader {
     );
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    // 使用 CLAMP_TO_EDGE 当采样超出阴影贴图范围时会使得处于边缘的阴影无限延申出去直到场景边界，导致错误的阴影
+    // 而默认的repeat又会导致错误的重复阴影
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_BORDER);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_BORDER);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_FUNC, gl.GREATER);
     gl.bindTexture(gl.TEXTURE_2D, null);
@@ -230,6 +231,16 @@ export default class Shader {
     this.$gl.uniform1f(this.$gl.getUniformLocation(this.$shaderProgram, name), f);
   }
 
+  setVec2(name, vec2) {
+    const gl = this.$gl;
+    gl.uniform2fv(gl.getUniformLocation(this.$shaderProgram, name), vec2);
+  }
+
+  setVec3(name, vec3) {
+    const gl = this.$gl;
+    gl.uniform3fv(gl.getUniformLocation(this.$shaderProgram, name), vec3);
+  }
+
   setVec4(name, vec4) {
     this.$gl.uniform4fv(this.$gl.getUniformLocation(this.$shaderProgram, name), vec4);
   }
@@ -237,10 +248,5 @@ export default class Shader {
   setMat4(name, martix) {
     const gl = this.$gl;
     gl.uniformMatrix4fv(gl.getUniformLocation(this.$shaderProgram, name), false, martix);
-  }
-
-  setVec3(name, vec3) {
-    const gl = this.$gl;
-    gl.uniform3fv(gl.getUniformLocation(this.$shaderProgram, name), vec3);
   }
 }

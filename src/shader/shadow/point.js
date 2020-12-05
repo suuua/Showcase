@@ -29,41 +29,32 @@ export default class PointShader extends Shader {
     return { FBO, depthMap };
   }
 
-  draw(scene) {
+  draw(scene, { sendGpuDataVisitor }) {
     const gl = this.$gl;
     const width = scene.diagonalPixel;
     const pointLights = scene.filterLightPointComponents();
-    let renderObjects = [];
-    scene.eachMeshComponents((component) => {
-      renderObjects = renderObjects.concat(
-        component.setMeshRenderData({ shader: this }),
-      );
-    });
-
     const result = [];
     this.use();
-    gl.viewport(0, 0, width, width);
     pointLights.forEach((light) => {
       const cubeLightSpaceMat4 = light.cubeSpaceMat4({ width });
       for (let i = 0; i < 6; i += 1) {
         const { FBO, depthMap } = this.$createFrameBuffer({ width, height: width });
-        const lightSpaceMatrix = cubeLightSpaceMat4[i];
         gl.bindFramebuffer(gl.FRAMEBUFFER, FBO);
         gl.clear(gl.DEPTH_BUFFER_BIT);
+        const lightSpaceMatrix = cubeLightSpaceMat4[i];
         this.setMat4('lightSpaceMatrix', lightSpaceMatrix);
-
-        // render Mesh
-        renderObjects.forEach(({
-          VAO,
-          modelMartix,
-          size,
-        }) => {
-          gl.bindVertexArray(VAO);
+        // render mesh
+        scene.eachMeshComponents((mesh) => {
+          const { modelMartix } = mesh.parent;
+          const { primitives } = sendGpuDataVisitor.mesh(mesh, this);
           this.setMat4('model', modelMartix);
-          gl.drawElements(gl.TRIANGLES, size, gl.UNSIGNED_SHORT, 0);
+          primitives.forEach(({ VAO, size }) => {
+            gl.bindVertexArray(VAO);
+            gl.drawElements(gl.TRIANGLES, size, gl.UNSIGNED_SHORT, 0);
+          });
         });
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         result.push({
           depthMap,
           lightSpaceMatrix,

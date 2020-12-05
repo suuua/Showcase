@@ -1,5 +1,5 @@
-import Texture from '../texture';
-import Material from '../material';
+import Texture from '../scene/texture';
+import Material from '../scene/material';
 import GameObject from '../scene/gameObject';
 import Scene from '../scene';
 

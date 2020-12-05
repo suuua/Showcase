@@ -78,6 +78,9 @@ export default class Scene {
     this.$diagonal = 10;
     // this.interator = new Interator(this);
     // this.visitor = new Visitor(this);
+
+    // 缓存的场景相关数据
+    this.$camera = null;
   }
 
   get axiasArea() { return [[...this.$axiasArea[0]], [...this.$axiasArea[1]]]; }
@@ -189,4 +192,14 @@ export default class Scene {
       (MAX[0] - MIN[0]) ** 2 + (MAX[1] - MIN[1]) ** 2 + (MAX[2] - MIN[2]) ** 2
     ) ** 0.5;
   }
+
+  /* 以下这些在渲染每帧时会频繁使用，为了防止每帧都去求值，这里缓存结果并直接返回 */
+  get camera() {
+    if (!this.$camera) {
+      this.$camera = this.getCameraComponent();
+    }
+    return this.$camera;
+  }
+
+  /* END */
 }

@@ -12,7 +12,11 @@ module.exports = {
   },
   module: {
     rules: [
-      { test: /\.glsl$/, use: 'raw-loader' },
+      {
+        test: /\.glsl$/,
+        exclude: /node_modules/,
+        use: ['raw-loader', 'glslify-loader'],
+      },
       {
         test: /\.m?js$/,
         exclude: /node_modules/,

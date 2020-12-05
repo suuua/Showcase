@@ -1,4 +1,4 @@
-import { quatToEuler, radianToAngle } from '../../helper';
+import { quatToEuler, radianToAngle } from '../../../helper';
 import Component from '../index';
 
 const { vec3, quat } = require('gl-matrix');

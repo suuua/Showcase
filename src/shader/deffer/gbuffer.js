@@ -5,21 +5,18 @@ import fsSource from './gbuffer.frag.glsl';
 export default class GBufferShader extends Shader {
   constructor({ gl }) {
     super({ gl, vsSource, fsSource });
+    this.$FBO = this.$createFrameBuffer();
+    this.use();
+    this.setInt('baseColorTex', 0);
+    this.setInt('metallicRoughnessTexture', 1);
+    this.setInt('normalTexture', 2);
+    this.setInt('occlusionTexture', 3);
   }
 
-  // 关于此着色器参数描述包括变量名称，结构，内存布局，位置等属性
-  // eslint-disable-next-line
-  get description() {
-    return {
-      baseColor: 'texture_base',
-      baseColorFactor: 'baseColorFactor',
-    };
-  }
-
-  createFrameBuffer() {
+  $createFrameBuffer() {
     const gl = this.$gl;
-    const SCR_WIDTH = gl.canvas.width;
-    const SCR_HEIGHT = gl.canvas.height;
+    const SCR_WIDTH = gl.drawingBufferWidth;
+    const SCR_HEIGHT = gl.drawingBufferHeight;
     const FBO = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, FBO);
 
@@ -149,6 +146,86 @@ export default class GBufferShader extends Shader {
       albedoOcclusionTexture,
       depthMetallicRoughnessTexture,
       depthRBO,
+    };
+  }
+
+  draw(scene, { sendGpuDataVisitor }) {
+    const gl = this.$gl;
+    const {
+      FBO,
+      positionTexture,
+      normalTexture,
+      albedoOcclusionTexture,
+      depthMetallicRoughnessTexture,
+    } = this.$FBO;
+    this.use();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, FBO);
+    // eslint-disable-next-line
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.clearColor(0, 0, 0, 1);
+    this.setMat4('cameraSpaceMartix', scene.camera.spaceMat4);
+    // render mesh
+    scene.eachMeshComponents((mesh) => {
+      const { modelMartix } = mesh.parent;
+      const { primitives } = sendGpuDataVisitor.mesh(mesh, this);
+      this.setMat4('model', modelMartix);
+      primitives.forEach(({ VAO, size, material }) => {
+        gl.bindVertexArray(VAO);
+        // draw material
+        if (material) {
+          const {
+            baseColorFactor,
+            baseColorTexture,
+            metallicFactor,
+            roughnessFactor,
+            metallicRoughnessTexture,
+            normalTexture: maNormalTexture,
+            occlusionTexture,
+            // emissiveFactor,
+            // alphaCutoff,
+          } = material;
+          if (baseColorTexture) {
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, baseColorTexture.texture);
+            this.setVec4('baseColorFactor', baseColorFactor);
+          }
+
+          if (metallicRoughnessTexture) {
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, metallicRoughnessTexture.texture);
+            this.setFloat('metallicFactor', metallicFactor);
+            this.setFloat('metallicFactor', roughnessFactor);
+          }
+
+          if (maNormalTexture) {
+            gl.activeTexture(gl.TEXTURE2);
+            gl.bindTexture(gl.TEXTURE_2D, maNormalTexture.texture);
+          }
+
+          if (occlusionTexture) {
+            gl.activeTexture(gl.TEXTURE3);
+            gl.bindTexture(gl.TEXTURE_2D, occlusionTexture.texture);
+          }
+        }
+        gl.drawElements(gl.TRIANGLES, size, gl.UNSIGNED_SHORT, 0);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.activeTexture(gl.TEXTURE3);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+      });
+    });
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    return {
+      positionTexture,
+      normalTexture,
+      albedoOcclusionTexture,
+      depthMetallicRoughnessTexture,
     };
   }
 }

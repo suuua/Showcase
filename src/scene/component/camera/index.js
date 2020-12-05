@@ -3,7 +3,7 @@
  */
 
 import Component from '../index';
-import { isEqualArray } from '../../helper';
+import { isEqualArray } from '../../../helper';
 
 const { mat4, vec3, quat } = require('gl-matrix');
 

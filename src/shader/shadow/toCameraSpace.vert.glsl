@@ -17,9 +17,8 @@ out vec3 fragPos;
 void main()
 {
   vec4 wordPos = model * vec4(position, 1.0);
-  cameraSpacePos = cameraSpaceMatrix * wordPos;
   lightSpacePos = lightSpaceMatrix * wordPos;
   normal = mat3(transpose(inverse(model))) * aNormal;
   fragPos = vec3(wordPos);
-  gl_Position = cameraSpacePos;
+  gl_Position = cameraSpaceMatrix * wordPos;
 }

@@ -8,6 +8,7 @@ export default class LightSpot extends Light {
   constructor(infos) {
     super(infos);
     this.tag = 'LightSpot';
+    this.type = 2;
     // range 为0 代表光源为无穷范围
     this.range = infos.range || 0;
     // 注意这里是半角

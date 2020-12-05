@@ -2,9 +2,9 @@
  * material和shader是互相依赖的关系，shader决定material需要什么数据，可用什么选项。shader需要material的数据。
  */
 
-import Light from '../../component/light';
-import Camera from '../../component/camera';
-import Mesh from '../../component/mesh';
+import Light from '../component/light';
+import Camera from '../component/camera';
+import Mesh from '../component/mesh';
 
 const {
   mat4,
@@ -40,6 +40,8 @@ export default class GameObject {
     this.weights = weights;
     this.skin = skin;
 
+    this.$modelMartix = null;
+    this.$dirtyModel = true;
     // Transformations
     this.setTransform(translation, rotation, scale, matrix);
   }
@@ -52,7 +54,17 @@ export default class GameObject {
 
   set l2wTransMat4(val) {
     this.$l2wTransMat4 = val;
+    this.$dirtyModel = true;
     this.resetChildL2wTrans();
+  }
+
+  get modelMartix() {
+    if (!this.$dirtyModel) { return this.$modelMartix; }
+    this.$dirtyModel = false;
+    const { matrix, l2wTransMat4 } = this;
+    this.$modelMartix = mat4.create();
+    mat4.multiply(this.$modelMartix, l2wTransMat4, matrix);
+    return this.$modelMartix;
   }
 
   get translation() { return [...this.$translation]; }
@@ -106,6 +118,7 @@ export default class GameObject {
         vec3.fromValues(...this.$scale),
       );
     }
+    this.$dirtyModel = true;
     this.resetChildL2wTrans();
   }
 
