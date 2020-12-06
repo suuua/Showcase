@@ -211,13 +211,12 @@ function parseAccessorToGl(accessor, totalInfos, ext) {
 }
 
 function parseTextures(textures, sourceInfos, parsedInfo) {
-  const { images } = parsedInfo;
-  const { samplers } = sourceInfos;
+  const { images, samplers } = parsedInfo;
   return textures.map((texture) => {
     const { sampler, source } = texture;
     const textureInfo = {};
     textureInfo.source = images[source];
-    if (sampler && samplers) {
+    if (Number.isInteger(sampler) && samplers) {
       textureInfo.sampler = samplers[sampler];
     }
     return textureInfo;
@@ -242,6 +241,8 @@ function parseMaterials(materials, ext) {
         ...textures[index],
         texCoord,
       });
+    } else {
+      myMaterial.pbrMetallicRoughness.baseColorTexture = Texture.DEFAULT;
     }
     if (metallicRoughnessTexture) {
       const { index, texCoord } = metallicRoughnessTexture;
@@ -330,6 +331,8 @@ function generatePrimitive(pri, totalInfos, parsedInfo) {
   });
   if (Number.isInteger(material)) {
     primitive.material = materials[material];
+  } else {
+    primitive.material = Material.DEFAULT;
   }
   primitive.indices = parseAccessorToGl(accessors[indices], totalInfos, parsedInfo);
   primitive.mode = mode;
@@ -592,6 +595,7 @@ export default class GLTFLoader extends Loader {
       materials,
       textures,
       asset,
+      samplers,
     } = infos;
 
     if (!GLTFLoader.validator(infos.asset)) { warn('unsupport GLTF file'); }
@@ -610,6 +614,11 @@ export default class GLTFLoader extends Loader {
     // images use buffer data
     if (images) {
       parsedInfo.images = await loadImages(images, bufferViews, parsedInfo.buffers);
+    }
+
+    if (samplers) {
+      // TODO: samplers
+      parsedInfo.samplers = samplers;
     }
 
     // textures use images data

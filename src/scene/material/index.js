@@ -2,6 +2,7 @@
  * 物体材质包含对所用纹理的引用、平铺信息、颜色色调等来定义表面应使用的渲染方式
  * material的可用选项取决于材质使用的着色器
  */
+import Texture from './texture';
 
 const ALPHA_MODE_OPAQUE = 'OPAQUE';
 
@@ -24,7 +25,7 @@ function pbrMetallicRoughnessFactory({
   };
 }
 
-export default class Material {
+class Material {
   constructor({
     name,
     pbrMetallicRoughness,
@@ -52,3 +53,15 @@ export default class Material {
 
   static get ALPHA_MODE_OPAQUE() { return ALPHA_MODE_OPAQUE; }
 }
+
+function createDefaultMaterial() {
+  return new Material({
+    pbrMetallicRoughness: {
+      baseColorTexture: Texture.DEFAULT,
+    },
+  });
+}
+
+Material.DEFAULT = createDefaultMaterial();
+
+export default Material;

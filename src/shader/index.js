@@ -14,6 +14,9 @@ function preCompileShader(source, predefined) {
   return result;
 }
 
+/**
+ * TODO: 将发送到GPU内存相关的创建VAO，VBO，texture等抽离为一个builder
+ */
 export default class Shader {
   constructor({
     gl,
@@ -117,12 +120,12 @@ export default class Shader {
 
   createBaseColorTexture(info) {
     const gl = this.$gl;
+    const { width, height, imgElm } = info;
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    // set texture wrapping to GL_REPEAT (default wrapping method)
+    // TODO: follow the sample attribute
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-    const { width, height, imgElm } = info;
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,

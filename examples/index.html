@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Examples of Showcase</title>
-    <script src="../dist/showcase.js"></script>
     <style>
         .showcase {
             border: 1px solid #e1e1e1;
@@ -19,6 +18,7 @@
         <canvas class="showcase" width="800px" height="600px" id="showcase"></canvas>
     </main>
 </body>
+<script src="../dist/showcase.js"></script>
 <script>
     // Showcase.loadModel('./wall.jpg').then(scene => {
     //     const showcase = new Showcase({
@@ -28,7 +28,7 @@
     //     showcase.draw();
     // });
 
-    Showcase.GLTFLoader.load('./cube.gltf').then(scene => {
+    Showcase.GLTFLoader.load('./xier.gltf').then(scene => {
         console.log(scene);
         const showcase = new Showcase({
             canvas: document.getElementById('showcase'),
