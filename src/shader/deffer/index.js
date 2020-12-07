@@ -2,7 +2,7 @@ import GBufferShader from './gbuffer';
 import LightShader from './light';
 import Ambient from './ambient';
 
-export default class Shading {
+export default class DefferShading {
   constructor({ gl }) {
     this.$gl = gl;
     this.$gBufferShader = new GBufferShader({ gl });

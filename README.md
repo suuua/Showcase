@@ -4,20 +4,18 @@
 
 ## TODO List
 
-1. 支持GLT2文件加载。首先仅支持以下类别：
-   - mesh
-   - transform (translate, rotate, scale)
-   - material
-   - light
-   - camera
+1. 支持GLT2文件加载。待支持以下类别：
    - skybox
-2. Standard shader 用于渲染单个场景中的游戏对象。支持面剔除，透明物体等
-3. 重写渲染部分js代码。
-4. 场景文件的解析可能需要大量耗时，这里使用Worker来处理。
-5. 减少浮点运算数精度来加快运算速度
-6. 材质的渲染中需要学习并实现 PBR（Physically Based Rendering）
-7. 计算摄像机位置（四元数）过慢导致画面卡顿
-8. 文件没有光源情况下默认光源的添加
+   - animation
+   - extendsion
+   - extra
+   - samplers
+   - 透明物体
+2. 重写渲染部分js代码。
+3. 场景文件的解析可能需要大量耗时，这里使用Worker来处理。
+4. 减少浮点运算数精度来加快运算速度
+5. 需要优化卡顿的问题
+6. 文件没有光源情况下默认光源的添加
 
 ## QUESTION
 
