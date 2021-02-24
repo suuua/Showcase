@@ -2,6 +2,8 @@
 
 目标是像图片一样能够低成本的播放3D物体
 
+这个是个人学习项目，目前拥有大量缺陷与问题，不建议使用
+
 ## TODO List
 
 1. 支持GLT2文件加载。待支持以下类别：
@@ -30,12 +32,12 @@
 
 ## 参考文档
 
-[webgl 指南](https://www.khronos.org/registry/webgl/specs/latest/1.0/index.html)
-[OpenGL GLSL ES 指南](https://www.khronos.org/registry/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf)
-[OpenGL ES 指南](https://www.khronos.org/registry/OpenGL/specs/es/3.0/es_spec_3.0.pdf)
-[OpenGL ES API 手册](https://www.khronos.org/registry/OpenGL-Refpages/es3.0/)
-[webGL1 API 手册](https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/getContextAttributes)
-[webGL2 API 手册](https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext)
-[OpenGL 学习教程](https://learnopengl-cn.github.io/)
-[GLTF 文件 指南](https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#specifying-extensions)
-[blender 文档](https://docs.blender.org/manual/zh-hans/2.90/render/lights/light_object.html#sun-light)
+- [webgl 指南](https://www.khronos.org/registry/webgl/specs/latest/1.0/index.html)
+- [OpenGL GLSL ES 指南](https://www.khronos.org/registry/OpenGL/specs/es/3.0/GLSL_ES_Specification_3.00.pdf)
+- [OpenGL ES 指南](https://www.khronos.org/registry/OpenGL/specs/es/3.0/es_spec_3.0.pdf)
+- [OpenGL ES API 手册](https://www.khronos.org/registry/OpenGL-Refpages/es3.0/)
+- [webGL1 API 手册](https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/getContextAttributes)
+- [webGL2 API 手册](https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext)
+- [OpenGL 学习教程](https://learnopengl-cn.github.io/)
+- [GLTF 文件 指南](https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#specifying-extensions)
+- [blender 文档](https://docs.blender.org/manual/zh-hans/2.90/render/lights/light_object.html#sun-light)
