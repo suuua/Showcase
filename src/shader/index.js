@@ -8,15 +8,11 @@ import { warn } from '../helper/log';
 function preCompileShader(source, predefined) {
   let result = source;
   Object.entries(predefined).forEach(([key, val]) => {
-    // 频繁的赋值常量会导致内存不停的创建/销毁
     result = result.replace(new RegExp(`@${key}`, 'g'), val);
   });
   return result;
 }
 
-/**
- * TODO: 将发送到GPU内存相关的创建VAO，VBO，texture等抽离为一个builder
- */
 export default class Shader {
   constructor({
     gl,
