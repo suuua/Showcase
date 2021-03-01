@@ -99,7 +99,6 @@ async function getImageFileInfo(file) {
 
 /**
  * 依据accessor提取buffer中的内容并生成一个新的紧凑buffer
- * buffer内容全错了，需要从新检查下算法
  * @param {Boolean} isPlainAccessor 用来区分是accessor还是sparse中的indices或values
  * @returns {TypeArray}
  */
@@ -109,6 +108,7 @@ function extractTypeArray(accessor, totalInfos, ext, isPlainAccessor = true) {
   const { buffer } = ext.buffers[bufferView.buffer];
   const { byteStride } = bufferView;
   const { componentType, count, type } = accessor;
+  // TODO: 使用简单工厂替代吧
   const TA = accessorMacro.getTypeArray(componentType);
   const plength = type ? count * accessorMacro[type] : count;
   const accessorOffset = accessor.byteOffset || 0;

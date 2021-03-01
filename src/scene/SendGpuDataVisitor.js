@@ -115,6 +115,7 @@ export default class SendGpuDataVisitor {
 
     materialGpuData.emissiveFactor = arr2vec(emissiveFactor, 3);
     materialGpuData.alphaCutoff = alphaCutoff;
+    this.$GPUMemory.set(material, materialGpuData);
     return materialGpuData;
   }
 
